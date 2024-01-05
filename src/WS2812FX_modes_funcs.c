@@ -35,11 +35,11 @@
 /*
   overload Adafruit_NeoPixel fill() function to respect segment boundaries
 */
-void WS2812FX::fill(uint32_t c, uint16_t first, uint16_t count) {
+void WS2812FX_fill(uint32_t c, uint16_t first, uint16_t count) {
   uint16_t i, end;
 
   // If first LED is past end of strip or outside segment boundaries, nothing to do
-  if (first >= numLEDs || first < _seg->start || first > _seg->stop) {
+  if (first >= Adafruit_NeoPixel_numLEDs || first < _seg->start || first > _seg->stop) {
     return;
   }
 
@@ -51,10 +51,10 @@ void WS2812FX::fill(uint32_t c, uint16_t first, uint16_t count) {
     if(end > (_seg->stop + 1)) end = _seg->stop + 1;
   }
 
-  if (end > numLEDs) end = numLEDs;
+  if (end > Adafruit_NeoPixel_numLEDs) end = Adafruit_NeoPixel_numLEDs;
 
   for (i = first; i < end; i++) {
-    setPixelColor(i, c);
+    WS2812FX_setPixelColor_nc(i, c);
   }
 }
 
@@ -63,15 +63,15 @@ void WS2812FX::fill(uint32_t c, uint16_t first, uint16_t count) {
  * Alternate between color1 and color2
  * if(strobe == true) then create a strobe effect
  */
-uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe) {
+uint16_t WS2812FX_blink(uint32_t color1, uint32_t color2, bool strobe) {
   if(_seg_rt->counter_mode_call & 1) {
     uint32_t color = (IS_REVERSE) ? color1 : color2; // off
-    fill(color, _seg->start, _seg_len);
+    WS2812FX_fill(color, _seg->start, _seg_len);
     SET_CYCLE;
     return strobe ? _seg->speed - 20 : (_seg->speed / 2);
   } else {
     uint32_t color = (IS_REVERSE) ? color2 : color1; // on
-    fill(color, _seg->start, _seg_len);
+    WS2812FX_fill(color, _seg->start, _seg_len);
     return strobe ? 20 : (_seg->speed / 2);
   }
 }
@@ -81,20 +81,20 @@ uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe) {
  * LEDs are turned on (color1) in sequence, then turned off (color2) in sequence.
  * if (bool rev == true) then LEDs are turned off in reverse order
  */
-uint16_t WS2812FX::color_wipe(uint32_t color1, uint32_t color2, bool rev) {
+uint16_t WS2812FX_color_wipe(uint32_t color1, uint32_t color2, bool rev) {
   if(_seg_rt->counter_mode_step < _seg_len) {
     uint32_t led_offset = _seg_rt->counter_mode_step;
     if(IS_REVERSE) {
-      setPixelColor(_seg->stop - led_offset, color1);
+      WS2812FX_setPixelColor_nc(_seg->stop - led_offset, color1);
     } else {
-      setPixelColor(_seg->start + led_offset, color1);
+      WS2812FX_setPixelColor_nc(_seg->start + led_offset, color1);
     }
   } else {
     uint32_t led_offset = _seg_rt->counter_mode_step - _seg_len;
     if((IS_REVERSE && !rev) || (!IS_REVERSE && rev)) {
-      setPixelColor(_seg->stop - led_offset, color2);
+      WS2812FX_setPixelColor_nc(_seg->stop - led_offset, color2);
     } else {
-      setPixelColor(_seg->start + led_offset, color2);
+      WS2812FX_setPixelColor_nc(_seg->start + led_offset, color2);
     }
   }
 
@@ -109,18 +109,18 @@ uint16_t WS2812FX::color_wipe(uint32_t color1, uint32_t color2, bool rev) {
 /*
  * scan function - runs a block of pixels back and forth.
  */
-uint16_t WS2812FX::scan(uint32_t color1, uint32_t color2, bool dual) {
+uint16_t WS2812FX_scan(uint32_t color1, uint32_t color2, bool dual) {
   int8_t dir = _seg_rt->aux_param ? -1 : 1;
   uint8_t size = 1 << SIZE_OPTION;
 
-  fill(color2, _seg->start, _seg_len);
+  WS2812FX_fill(color2, _seg->start, _seg_len);
 
   for(uint8_t i = 0; i < size; i++) {
     if(IS_REVERSE || dual) {
-      setPixelColor(_seg->stop - _seg_rt->counter_mode_step - i, color1);
+      WS2812FX_setPixelColor_nc(_seg->stop - _seg_rt->counter_mode_step - i, color1);
     }
     if(!IS_REVERSE || dual) {
-      setPixelColor(_seg->start + _seg_rt->counter_mode_step + i, color1);
+      WS2812FX_setPixelColor_nc(_seg->start + _seg_rt->counter_mode_step + i, color1);
     }
   }
 
@@ -137,7 +137,7 @@ uint16_t WS2812FX::scan(uint32_t color1, uint32_t color2, bool dual) {
 /*
  * Tricolor chase function
  */
-uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2, uint32_t color3) {
+uint16_t WS2812FX_tricolor_chase(uint32_t color1, uint32_t color2, uint32_t color3) {
   uint8_t sizeCnt = 1 << SIZE_OPTION;
   uint8_t sizeCnt2 = sizeCnt + sizeCnt;
   uint8_t sizeCnt3 = sizeCnt2 + sizeCnt;
@@ -150,9 +150,9 @@ uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2, uint32_t col
     else if(index < sizeCnt2) color = color2;
 
     if(IS_REVERSE) {
-      setPixelColor(_seg->start + i, color);
+      WS2812FX_setPixelColor_nc(_seg->start + i, color);
     } else {
-      setPixelColor(_seg->stop - i, color);
+      WS2812FX_setPixelColor_nc(_seg->stop - i, color);
     }
   }
 
@@ -165,15 +165,15 @@ uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2, uint32_t col
 /*
  * twinkle function
  */
-uint16_t WS2812FX::twinkle(uint32_t color1, uint32_t color2) {
+uint16_t WS2812FX_twinkle(uint32_t color1, uint32_t color2) {
   if(_seg_rt->counter_mode_step == 0) {
-    fill(color2, _seg->start, _seg_len);
+    WS2812FX_fill(color2, _seg->start, _seg_len);
     uint16_t min_leds = (_seg_len / 4) + 1; // make sure, at least one LED is on
-    _seg_rt->counter_mode_step = random(min_leds, min_leds * 2);
+    _seg_rt->counter_mode_step = WS2812FX_random(min_leds, min_leds * 2);
     SET_CYCLE;
   }
 
-  setPixelColor(_seg->start + random16(_seg_len), color1);
+  WS2812FX_setPixelColor_nc(_seg->start + WS2812FX_random16_lim(_seg_len), color1);
 
   _seg_rt->counter_mode_step--;
   return (_seg->speed / _seg_len);
@@ -182,11 +182,11 @@ uint16_t WS2812FX::twinkle(uint32_t color1, uint32_t color2) {
 /*
  * fade out functions
  */
-void WS2812FX::fade_out() {
-  return fade_out(_seg->colors[1]);
+void WS2812FX_fade_out() {
+  return WS2812FX_fade_out_targetColor(_seg->colors[1]);
 }
 
-void WS2812FX::fade_out(uint32_t targetColor) {
+void WS2812FX_fade_out_targetColor(uint32_t targetColor) {
   static const uint8_t rateMapH[] = {0, 1, 1, 1, 2, 3, 4, 6};
   static const uint8_t rateMapL[] = {0, 2, 3, 8, 8, 8, 8, 8};
 
@@ -201,9 +201,9 @@ void WS2812FX::fade_out(uint32_t targetColor) {
   int b2 =  color        & 0xff;
 
   for(uint16_t i=_seg->start; i <= _seg->stop; i++) {
-    color = getPixelColor(i); // current color
+    color = Adafruit_NeoPixel_getPixelColor(i); // current color
     if(rate == 0) { // old fade-to-black algorithm
-      setPixelColor(i, (color >> 1) & 0x7F7F7F7F);
+      WS2812FX_setPixelColor_nc(i, (color >> 1) & 0x7F7F7F7F);
     } else { // new fade-to-color algorithm
       int w1 = (color >> 24) & 0xff;
       int r1 = (color >> 16) & 0xff;
@@ -223,7 +223,7 @@ void WS2812FX::fade_out(uint32_t targetColor) {
       gdelta = abs(gdelta) < 3 ? gdelta : (gdelta >> rateH) + (gdelta >> rateL);
       bdelta = abs(bdelta) < 3 ? bdelta : (bdelta >> rateH) + (bdelta >> rateL);
 
-      setPixelColor(i, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+      WS2812FX_setPixelColor_nrgbw(i, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
     }
   }
 }
@@ -231,17 +231,17 @@ void WS2812FX::fade_out(uint32_t targetColor) {
 /*
  * color blend function
  */
-uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blendAmt) {
+uint32_t WS2812FX_color_blend(uint32_t color1, uint32_t color2, uint8_t blendAmt) {
   uint32_t blendedColor;
   blend((uint8_t*)&blendedColor, (uint8_t*)&color1, (uint8_t*)&color2, sizeof(uint32_t), blendAmt);
   return blendedColor;
 }
 
-uint8_t* WS2812FX::blend(uint8_t *dest, uint8_t *src1, uint8_t *src2, uint16_t cnt, uint8_t blendAmt) {
+uint8_t* WS2812FX_blend(uint8_t *dest, uint8_t *src1, uint8_t *src2, uint16_t cnt, uint8_t blendAmt) {
   if(blendAmt == 0) {
-    memmove(dest, src1, cnt);
+    Adafruit_NeoPixel_memmove(dest, src1, cnt);
   } else if(blendAmt == 255) {
-    memmove(dest, src2, cnt);
+    Adafruit_NeoPixel_memmove(dest, src2, cnt);
   } else {
     for(uint16_t i=0; i<cnt; i++) {
 //    dest[i] = map(blendAmt, 0, 255, src1[i], src2[i]);
@@ -254,13 +254,13 @@ uint8_t* WS2812FX::blend(uint8_t *dest, uint8_t *src1, uint8_t *src2, uint16_t c
 /*
  * twinkle_fade function
  */
-uint16_t WS2812FX::twinkle_fade(uint32_t color) {
-  fade_out();
+uint16_t WS2812FX_twinkle_fade(uint32_t color) {
+  WS2812FX_fade_out();
 
-  if(random8(3) == 0) {
+  if(WS2812FX_random8_lim(3) == 0) {
     uint8_t size = 1 << SIZE_OPTION;
-    uint16_t index = _seg->start + random16(_seg_len - size + 1);
-    fill(color, index, size);
+    uint16_t index = _seg->start + WS2812FX_random16_lim(_seg_len - size + 1);
+    WS2812FX_fill(color, index, size);
     SET_CYCLE;
   }
   return (_seg->speed / 16);
@@ -271,16 +271,16 @@ uint16_t WS2812FX::twinkle_fade(uint32_t color) {
  * color1 = background color
  * color2 = sparkle color
  */
-uint16_t WS2812FX::sparkle(uint32_t color1, uint32_t color2) {
+uint16_t WS2812FX_sparkle(uint32_t color1, uint32_t color2) {
   if(_seg_rt->counter_mode_step == 0) {
-    fill(color1, _seg->start, _seg_len);
+    WS2812FX_fill(color1, _seg->start, _seg_len);
   }
 
   uint8_t size = 1 << SIZE_OPTION;
-  fill(color1, _seg->start + _seg_rt->aux_param3, size);
+  WS2812FX_fill(color1, _seg->start + _seg_rt->aux_param3, size);
 
-  _seg_rt->aux_param3 = random16(_seg_len - size + 1); // aux_param3 stores the random led index
-  fill(color2, _seg->start + _seg_rt->aux_param3, size);
+  _seg_rt->aux_param3 = WS2812FX_random16_lim(_seg_len - size + 1); // aux_param3 stores the random led index
+  WS2812FX_fill(color2, _seg->start + _seg_rt->aux_param3, size);
 
   SET_CYCLE;
   return (_seg->speed / 32);
@@ -291,20 +291,20 @@ uint16_t WS2812FX::sparkle(uint32_t color1, uint32_t color2) {
  * color1 = background color
  * color2 and color3 = colors of two adjacent leds
  */
-uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3) {
+uint16_t WS2812FX_chase(uint32_t color1, uint32_t color2, uint32_t color3) {
   uint8_t size = 1 << SIZE_OPTION;
   for(uint8_t i=0; i<size; i++) {
     uint16_t a = (_seg_rt->counter_mode_step + i) % _seg_len;
     uint16_t b = (a + size) % _seg_len;
     uint16_t c = (b + size) % _seg_len;
     if(IS_REVERSE) {
-      setPixelColor(_seg->stop - a, color1);
-      setPixelColor(_seg->stop - b, color2);
-      setPixelColor(_seg->stop - c, color3);
+      WS2812FX_setPixelColor_nc(_seg->stop - a, color1);
+      WS2812FX_setPixelColor_nc(_seg->stop - b, color2);
+      WS2812FX_setPixelColor_nc(_seg->stop - c, color3);
     } else {
-      setPixelColor(_seg->start + a, color1);
-      setPixelColor(_seg->start + b, color2);
-      setPixelColor(_seg->start + c, color3);
+      WS2812FX_setPixelColor_nc(_seg->start + a, color1);
+      WS2812FX_setPixelColor_nc(_seg->start + b, color2);
+      WS2812FX_setPixelColor_nc(_seg->start + c, color3);
     }
   }
 
@@ -319,7 +319,7 @@ uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3) {
  * color1 = background color
  * color2 = flash color
  */
-uint16_t WS2812FX::chase_flash(uint32_t color1, uint32_t color2) {
+uint16_t WS2812FX_chase_flash(uint32_t color1, uint32_t color2) {
   const static uint8_t flash_count = 4;
   uint8_t flash_step = _seg_rt->counter_mode_call % ((flash_count * 2) + 1);
 
@@ -328,18 +328,18 @@ uint16_t WS2812FX::chase_flash(uint32_t color1, uint32_t color2) {
     uint16_t n = _seg_rt->counter_mode_step;
     uint16_t m = (_seg_rt->counter_mode_step + 1) % _seg_len;
     if(IS_REVERSE) {
-      setPixelColor(_seg->stop - n, color);
-      setPixelColor(_seg->stop - m, color);
+      WS2812FX_setPixelColor_nc(_seg->stop - n, color);
+      WS2812FX_setPixelColor_nc(_seg->stop - m, color);
     } else {
-      setPixelColor(_seg->start + n, color);
-      setPixelColor(_seg->start + m, color);
+      WS2812FX_setPixelColor_nc(_seg->start + n, color);
+      WS2812FX_setPixelColor_nc(_seg->start + m, color);
     }
     return 30;
   } else {
     _seg_rt->counter_mode_step = (_seg_rt->counter_mode_step + 1) % _seg_len;
     if(_seg_rt->counter_mode_step == 0) {
       // update aux_param so mode_chase_flash_random() will select the next color
-      _seg_rt->aux_param = get_random_wheel_index(_seg_rt->aux_param);
+      _seg_rt->aux_param = WS2812FX_get_random_wheel_index(_seg_rt->aux_param);
       SET_CYCLE;
     }
   }
@@ -349,16 +349,16 @@ uint16_t WS2812FX::chase_flash(uint32_t color1, uint32_t color2) {
 /*
  * Alternating pixels running function.
  */
-uint16_t WS2812FX::running(uint32_t color1, uint32_t color2) {
+uint16_t WS2812FX_running(uint32_t color1, uint32_t color2) {
   uint8_t size = 2 << SIZE_OPTION;
   uint32_t color = (_seg_rt->counter_mode_step & size) ? color1 : color2;
 
   if(IS_REVERSE) {
-    copyPixels(_seg->start, _seg->start + 1, _seg_len - 1);
-    setPixelColor(_seg->stop, color);
+    WS2812FX_copyPixels(_seg->start, _seg->start + 1, _seg_len - 1);
+    WS2812FX_setPixelColor_nc(_seg->stop, color);
   } else {
-    copyPixels(_seg->start + 1, _seg->start, _seg_len - 1);
-    setPixelColor(_seg->start, color);
+    WS2812FX_copyPixels(_seg->start + 1, _seg->start, _seg_len - 1);
+    WS2812FX_setPixelColor_nc(_seg->start, color);
   }
 
   _seg_rt->counter_mode_step++;
@@ -369,12 +369,12 @@ uint16_t WS2812FX::running(uint32_t color1, uint32_t color2) {
 /*
  * Fireworks function.
  */
-uint16_t WS2812FX::fireworks(uint32_t color) {
-  fade_out();
+uint16_t WS2812FX_fireworks(uint32_t color) {
+  WS2812FX_fade_out();
 
 // for better performance, manipulate the Adafruit_NeoPixels pixels[] array directly
-  uint8_t *pixels = getPixels();
-  uint8_t bytesPerPixel = getNumBytesPerPixel(); // 3=RGB, 4=RGBW
+  uint8_t *pixels = Adafruit_NeoPixel_getPixels();
+  uint8_t bytesPerPixel = WS2812FX_getNumBytesPerPixel(); // 3=RGB, 4=RGBW
   uint16_t startPixel = _seg->start * bytesPerPixel + bytesPerPixel;
   uint16_t stopPixel = _seg->stop * bytesPerPixel;
   for(uint16_t i=startPixel; i <stopPixel; i++) {
@@ -387,16 +387,16 @@ uint16_t WS2812FX::fireworks(uint32_t color) {
   uint8_t size = 2 << SIZE_OPTION;
   if(!_triggered) {
     for(uint16_t i=0; i<max(1, _seg_len/20); i++) {
-      if(random8(10) == 0) {
-        uint16_t index = _seg->start + random16(_seg_len - size + 1);
-        fill(color, index, size);
+      if(WS2812FX_random8_lim(10) == 0) {
+        uint16_t index = _seg->start + WS2812FX_random16_lim(_seg_len - size + 1);
+        WS2812FX_fill(color, index, size);
         SET_CYCLE;
       }
     }
   } else {
     for(uint16_t i=0; i<max(1, _seg_len/10); i++) {
-      uint16_t index = _seg->start + random16(_seg_len - size + 1);
-      fill(color, index, size);
+      uint16_t index = _seg->start + WS2812FX_random16_lim(_seg_len - size + 1);
+      WS2812FX_fill(color, index, size);
       SET_CYCLE;
     }
   }
@@ -407,15 +407,15 @@ uint16_t WS2812FX::fireworks(uint32_t color) {
 /*
  * Fire flicker function
  */
-uint16_t WS2812FX::fire_flicker(int rev_intensity) {
-  byte w = (_seg->colors[0] >> 24) & 0xFF;
-  byte r = (_seg->colors[0] >> 16) & 0xFF;
-  byte g = (_seg->colors[0] >>  8) & 0xFF;
-  byte b = (_seg->colors[0]        & 0xFF);
-  byte lum = max(w, max(r, max(g, b))) / rev_intensity;
+uint16_t WS2812FX_fire_flicker(int rev_intensity) {
+  uint8_t w = (_seg->colors[0] >> 24) & 0xFF;
+  uint8_t r = (_seg->colors[0] >> 16) & 0xFF;
+  uint8_t g = (_seg->colors[0] >>  8) & 0xFF;
+  uint8_t b = (_seg->colors[0]        & 0xFF);
+  uint8_t lum = max(w, max(r, max(g, b))) / rev_intensity;
   for(uint16_t i=_seg->start; i <= _seg->stop; i++) {
-    int flicker = random8(lum);
-    setPixelColor(i, max(r - flicker, 0), max(g - flicker, 0), max(b - flicker, 0), max(w - flicker, 0));
+    int flicker = WS2812FX_random8_lim(lum);
+    WS2812FX_setPixelColor_nrgbw(i, max(r - flicker, 0), max(g - flicker, 0), max(b - flicker, 0), max(w - flicker, 0));
   }
 
   SET_CYCLE;

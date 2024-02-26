@@ -53,35 +53,26 @@
 */
 
 #include "WS2812FX.h"
-#include "modes_defines.h"
+#include "WS2812FX_modes_defines.h"
 
 uint16_t _rand16seed;
-uint16_t (*customModes[MAX_CUSTOM_MODES])(void) {
-  []{ return (uint16_t)1000; },
-  []{ return (uint16_t)1000; },
-  []{ return (uint16_t)1000; },
-  []{ return (uint16_t)1000; },
-  []{ return (uint16_t)1000; },
-  []{ return (uint16_t)1000; },
-  []{ return (uint16_t)1000; },
-  []{ return (uint16_t)1000; }
-};
+
 void (*customShow)(void) = NULL;
 
 bool
   _running,
   _triggered;
 
-WS2812FX_segment* _segments;                 // array of segments (20 bytes per element)
-WS2812FX_segment_runtime* _segment_runtimes; // array of segment runtimes (16 bytes per element)
+WS2812FX_Segment* _segments;                 // array of segments (20 bytes per element)
+WS2812FX_Segment_runtime* _segment_runtimes; // array of segment runtimes (16 bytes per element)
 uint8_t* _active_segments;          // array of active segments (1 bytes per element)
 
 uint8_t _segments_len = 0;          // size of _segments array
 uint8_t _active_segments_len = 0;   // size of _segments_runtime and _active_segments arrays
 uint8_t _num_segments = 0;          // number of configured segments in the _segments array
 
-WS2812FX_segment* _seg;                      // currently active segment (20 bytes)
-WS2812FX_segment_runtime* _seg_rt;           // currently active segment runtime (16 bytes)
+WS2812FX_Segment* _seg;                      // currently active segment (20 bytes)
+WS2812FX_Segment_runtime* _seg_rt;           // currently active segment runtime (16 bytes)
 
 uint16_t _seg_len;                  // num LEDs in the currently active segment
 
@@ -102,9 +93,9 @@ void WS2812FX_init(uint16_t num_leds, neoPixelType type,
   _active_segments_len = max_num_active_segments;
 
   // create all the segment arrays and init to zeros
-  WS2812FX_segment _segments[_segments_len];
-  uint8_t _active_segments[_active_segments_len];
-  WS2812FX_segment_runtime _segment_runtimes[_active_segments_len];
+  WS2812FX_Segment _segments[MAX_NUM_SEGMENTS];
+  uint8_t _active_segments[MAX_NUM_ACTIVE_SEGMENTS];
+  WS2812FX_Segment_runtime _segment_runtimes[MAX_NUM_ACTIVE_SEGMENTS];
 
   // init segment pointers
   _seg     = _segments;
@@ -133,7 +124,7 @@ bool WS2812FX_service() {
         if(now > _seg_rt->next_time || _triggered) {
           SET_FRAME;
           doShow = true;
-          uint16_t delay = *(_modes[_seg->mode])();
+          uint16_t delay = _modes[_seg->mode]();
           _seg_rt->next_time = now + max(delay, SPEED_MIN);
           _seg_rt->counter_mode_call++;
         }
@@ -537,7 +528,7 @@ void WS2812FX_swapActiveSegment(uint8_t oldSeg, uint8_t newSeg) {
 
       // reset all runtime parameters EXCEPT next_time,
       // allowing the current animation frame to complete
-      __attribute__ ((unused)) WS2812FX_segment_runtime seg_rt = _segment_runtimes[i];
+      WS2812FX_Segment_runtime seg_rt = _segment_runtimes[i];
       seg_rt.counter_mode_step = 0;
       seg_rt.counter_mode_call = 0;
       seg_rt.aux_param = 0;
@@ -687,26 +678,6 @@ uint32_t* WS2812FX_intensitySums() {
   return intensities;
 }
 
-/*
- * Custom mode helpers
- */
-void WS2812FX_setCustomMode_vp(uint16_t (*p)()) {
-  customModes[0] = p;
-}
-
-uint8_t WS2812FX_setCustomMode_p(uint16_t (*p)()) {
-  static uint8_t custom_mode_index = 0;
-  return WS2812FX_setCustomMode_index_p(custom_mode_index++, p);
-}
-
-uint8_t WS2812FX_setCustomMode_index_p(uint8_t index, uint16_t (*p)()) {
-  if((uint8_t)(FX_MODE_CUSTOM_0 + index) < MODE_COUNT) {
-    customModes[index] = p; // store the custom mode
-
-    return (FX_MODE_CUSTOM_0 + index);
-  }
-  return 0;
-}
 
 /*
  * Custom show helper

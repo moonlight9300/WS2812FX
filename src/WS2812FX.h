@@ -41,7 +41,12 @@
 
 #define MAX_MILLIS (0UL - 1UL) /* ULONG_MAX */
 
+#define DEFAULT_BRIGHTNESS 100
+#define DEFAULT_MODE 1
+#define DEFAULT_SPEED 255
 
+#define MAX_NUM_SEGMENTS        16
+#define MAX_NUM_ACTIVE_SEGMENTS 16
 
 #define DEFAULT_COLOR      (uint32_t)0xFF0000
 #define DEFAULT_COLORS     { RED, GREEN, BLUE }
@@ -118,29 +123,29 @@
   //   typedef uint16_t (WS2812FX_*mode_ptr)(void);
 
 // segment parameters
-typedef struct WS2812FX_Segment { // 20 bytes
+typedef struct WS2812FX_segment{ // 20 bytes
   uint16_t start;
   uint16_t stop;
   uint16_t speed;
   uint8_t  mode;
   uint8_t  options;
   uint32_t colors[MAX_NUM_COLORS];
-} WS2812FX_segment;
+} WS2812FX_Segment;
 
 // segment runtime parameters
-typedef struct WS2812FX_Segment_runtime { // 20 bytes for Arduino, 24 bytes for ESP
+typedef struct WS2812FX_segment_runtime { // 20 bytes for Arduino, 24 bytes for ESP
   unsigned long next_time;
   uint32_t counter_mode_step;
   uint32_t counter_mode_call;
   uint8_t  aux_param;   // auxilary param (usually stores a color_wheel index)
   uint8_t  aux_param2;  // auxilary param (usually stores bitwise options)
   uint16_t aux_param3;  // auxilary param (usually stores a segment index)
-  uint8_t* extDataSrc = NULL; // external data array
-  uint16_t extDataCnt = 0;    // number of elements in the external data array
-} WS2812FX_segment_runtime;
+  uint8_t* extDataSrc; // external data array
+  uint16_t extDataCnt;    // number of elements in the external data array
+} WS2812FX_Segment_runtime;
 
-extern WS2812FX_segment* _seg;
-extern WS2812FX_segment_runtime* _seg_rt;
+extern WS2812FX_Segment* _seg;
+extern WS2812FX_Segment_runtime* _seg_rt;
 extern uint16_t _seg_len;
 extern bool _triggered;
 extern uint16_t (*customModes[MAX_CUSTOM_MODES])(void);

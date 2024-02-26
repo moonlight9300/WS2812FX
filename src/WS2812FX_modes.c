@@ -1056,7 +1056,7 @@ uint16_t WS2812FX_mode_flipbook(void) {
   // An external data source is required for the flipbook effect, so bale if none has been setup
   if(_seg_rt->extDataSrc) {
     // cast external data array to Flipbook struct
-    Flipbook* _flipbook = (Flipbook*) _seg_rt->extDataSrc;
+    struct Flipbook* _flipbook = (struct Flipbook*) _seg_rt->extDataSrc;
 
     uint16_t segIndex = _seg->start;
     uint8_t pageIndex = _seg_rt->aux_param * _flipbook->numRows * _flipbook->numCols; // aux_param will store the page index
@@ -1079,10 +1079,10 @@ uint16_t WS2812FX_mode_flipbook(void) {
 }
 
 uint16_t WS2812FX_mode_popcorn(void) {
-  static Popcorn popcorn[5]; // allocate space for 5 kernels of popcorn
+  static struct Popcorn popcorn[5]; // allocate space for 5 kernels of popcorn
 
   // if external data source not set, config for five popcorn kernels
-  Popcorn* src = _seg_rt->extDataSrc != NULL ? (Popcorn*)_seg_rt->extDataSrc : popcorn;
+  struct Popcorn* src = _seg_rt->extDataSrc != NULL ? (struct Popcorn*)_seg_rt->extDataSrc : popcorn;
   uint16_t cnt = _seg_rt->extDataCnt != 0    ? _seg_rt->extDataCnt           : 5;
 
   static float coeff = 0.0f;
@@ -1118,17 +1118,17 @@ uint16_t WS2812FX_mode_popcorn(void) {
 }
 
 uint16_t WS2812FX_mode_oscillator(void) {
-  static Oscillator oscillators[] = { // 2 default oscillators
+  static struct Oscillator oscillators[] = { // 2 default oscillators
     {(uint8_t)(_seg_len/4),                        0,  1}, // size, pos, speed
     {(uint8_t)(_seg_len/4),  (int16_t)(_seg_len - 1), -2}
   };
 
   // if external data source not set, config for two oscillators.
-  Oscillator* src = _seg_rt->extDataSrc != NULL ? (Oscillator*)_seg_rt->extDataSrc : oscillators;
+  struct Oscillator* src = _seg_rt->extDataSrc != NULL ? (struct Oscillator*)_seg_rt->extDataSrc : oscillators;
   uint16_t cnt    = _seg_rt->extDataCnt != 0    ? _seg_rt->extDataCnt              : 2;
 
   for(int8_t i=0; i < cnt; i++) {
-    Oscillator* osc = &src[i];
+    struct Oscillator* osc = &src[i];
     if(osc->size == 0) osc->size = 1; // make sure the size is at least one
     osc->pos += osc->speed; // update the osc position
     // check if the new position is within the segment bounds, and reset if not
@@ -1145,7 +1145,7 @@ uint16_t WS2812FX_mode_oscillator(void) {
     // if the oscillators overlap, blend their colors
     uint32_t blendedcolor = BLACK;
     for(int8_t j=0; j < cnt; j++) {
-      Oscillator* osc = &src[j];
+      struct Oscillator* osc = &src[j];
       uint32_t oscColor = _seg->colors[j % MAX_NUM_COLORS];
       if(i >= osc->pos && i < osc->pos + osc->size) {
         blendedcolor = (blendedcolor == BLACK) ? oscColor : WS2812FX_color_blend(blendedcolor, oscColor, 128);
@@ -1156,30 +1156,3 @@ uint16_t WS2812FX_mode_oscillator(void) {
   return(_seg->speed / 8);
 }
 
-/*
- * Custom modes
- */
-uint16_t WS2812FX_mode_custom_0() {
-  return customModes[0]();
-}
-uint16_t WS2812FX_mode_custom_1() {
-  return customModes[1]();
-}
-uint16_t WS2812FX_mode_custom_2() {
-  return customModes[2]();
-}
-uint16_t WS2812FX_mode_custom_3() {
-  return customModes[3]();
-}
-uint16_t WS2812FX_mode_custom_4() {
-  return customModes[4]();
-}
-uint16_t WS2812FX_mode_custom_5() {
-  return customModes[5]();
-}
-uint16_t WS2812FX_mode_custom_6() {
-  return customModes[6]();
-}
-uint16_t WS2812FX_mode_custom_7() {
-  return customModes[7]();
-}
